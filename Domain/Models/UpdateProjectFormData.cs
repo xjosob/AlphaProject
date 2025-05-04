@@ -1,10 +1,9 @@
-﻿using Domain.Models;
-
-namespace Domain.Models
+﻿namespace Domain.Models
 {
-    public class AddProjectFormData
+    public class UpdateProjectFormData
     {
-        public string? Image { get; set; }
+        public string Id { get; set; } = null!;
+
         public string ProjectName { get; set; } = null!;
         public string? Description { get; set; }
         public DateTime StartDate { get; set; }
@@ -12,7 +11,5 @@ namespace Domain.Models
         public decimal? Budget { get; set; }
         public string ClientId { get; set; } = null!;
         public int StatusId { get; set; }
-
-        public IEnumerable<Client> Clients { get; set; } = [];
     }
 }

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace Data.Migrations
 {
     /// <inheritdoc />
@@ -30,9 +32,8 @@ namespace Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    FirstName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LastName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    JobTitle = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -193,22 +194,15 @@ namespace Data.Migrations
                     ProjectName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     StartDate = table.Column<DateTime>(type: "date", nullable: false),
-                    EndDate = table.Column<DateTime>(type: "date", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "date", nullable: true),
                     Created = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Budget = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     ClientId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     StatusId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Projects", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Projects_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Projects_Clients_ClientId",
                         column: x => x.ClientId,
@@ -221,6 +215,15 @@ namespace Data.Migrations
                         principalTable: "Statuses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.InsertData(
+                table: "Statuses",
+                columns: new[] { "Id", "StatusName" },
+                values: new object[,]
+                {
+                    { 1, "Started" },
+                    { 2, "Completed" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -277,11 +280,6 @@ namespace Data.Migrations
                 name: "IX_Projects_StatusId",
                 table: "Projects",
                 column: "StatusId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Projects_UserId",
-                table: "Projects",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Statuses_StatusName",

@@ -1,0 +1,80 @@
+﻿@model Presentation.Models.SignUpViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <title>Sign Up - BackOffice Alpha</title>
+</head>
+<body>
+    <div class="center-wrapper">
+        <section id="signup">
+            <div class="card">
+                <div class="card-header"><h1>Create Account</h1></div>
+                <div class="card-body">
+                    <form asp-controller="Auth" asp-action="SignUp" method="post" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+                        <div class="form-group">
+                            <label asp-for="FirstName" class="form-label"></label>
+                            <input asp-for="FirstName" class="form-input" />
+                            <span asp-validation-for="FirstName" class="field-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="LastName" class="form-label"></label>
+                            <input asp-for="LastName" class="form-input" />
+                            <span asp-validation-for="LastName" class="field-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-input" />
+                            <span asp-validation-for="Email" class="field-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="Password" class="form-label"></label>
+                            <input asp-for="Password" class="form-input" />
+                            <span asp-validation-for="Password" class="field-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="ConfirmPassword" class="form-label"></label>
+                            <input asp-for="ConfirmPassword" class="form-input" />
+                            <span asp-validation-for="ConfirmPassword" class="field-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-checkbox" for="terms-checkbox">
+                                <input asp-for="TermsAndConditions"
+                                       id="terms-checkbox"
+                                       class="form-checkbox-input"
+                                       type="checkbox" />
+                                <span class="form-checkbox-box"></span>
+                                I accept <a href="#">Terms and Conditions</a>
+                            </label>
+
+                            <span asp-validation-for="TermsAndConditions" class="field-error"></span>
+                        </div>
+                        <button type="submit" class="btn">Create Account</button>
+                    </form>
+                    <div class="card-footer">
+                        Already have an account?
+                        <a asp-controller="Auth" asp-action="SignIn">Login</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>

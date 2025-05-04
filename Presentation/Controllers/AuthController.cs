@@ -10,54 +10,76 @@ namespace Presentation.Controllers
     {
         private readonly IAuthService _authService = authService;
 
+        [HttpGet]
         public IActionResult SignUp()
         {
+            ModelState.Clear();
             return View();
         }
 
         [HttpPost]
         public async Task<IActionResult> SignUp(SignUpViewModel model)
         {
-            ViewBag.ErrorMessage = null;
-
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
-            var signUpFormData = model.MapTo<SignUpFormData>();
-            var result = await _authService.SignUpAsync(signUpFormData);
+            var formData = model.MapTo<SignUpFormData>();
+            var result = await _authService.SignUpAsync(formData);
+
             if (result.Succeeded)
             {
                 return RedirectToAction("SignIn", "Auth");
             }
 
-            ViewBag.ErrorMessage = result.Error;
+            ModelState.AddModelError(
+                nameof(SignUpViewModel.Email),
+                result.Error ?? "An unknown error has occurred during sign-up"
+            );
             return View(model);
         }
 
+        [HttpGet]
         public IActionResult SignIn(string returnUrl = "~/")
         {
+            ModelState.Clear();
             ViewBag.ReturnUrl = returnUrl;
+
+            if (TempData.TryGetValue("AuthError", out var err) && err is string msg)
+            {
+                ModelState.AddModelError(string.Empty, msg);
+            }
+
             return View();
         }
 
         [HttpPost]
         public async Task<IActionResult> SignIn(SignInViewModel model, string returnUrl = "~/")
         {
-            ViewBag.ErrorMessage = null;
-            ViewBag.ReturnUrl = returnUrl;
-
             if (!ModelState.IsValid)
+            {
+                ViewBag.ReturnUrl = returnUrl;
                 return View(model);
+            }
 
-            var signInFormData = model.MapTo<SignInFormData>();
-            var result = await _authService.SignInAsync(signInFormData);
+            var formData = model.MapTo<SignInFormData>();
+            var result = await _authService.SignInAsync(formData);
+
             if (result.Succeeded)
             {
                 return LocalRedirect(returnUrl);
             }
-
-            ViewBag.ErrorMessage = result.Error;
+            ModelState.AddModelError(string.Empty, "Invalid email or password");
+            ViewBag.ReturnUrl = returnUrl;
             return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.SignOutAsync();
+            return RedirectToAction("SignIn", "Auth");
         }
     }
 }

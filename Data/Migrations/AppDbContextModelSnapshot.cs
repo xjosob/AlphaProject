@@ -57,7 +57,7 @@ namespace Data.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("EndDate")
+                    b.Property<DateTime?>("EndDate")
                         .HasColumnType("date");
 
                     b.Property<string>("Image")
@@ -73,17 +73,11 @@ namespace Data.Migrations
                     b.Property<int>("StatusId")
                         .HasColumnType("int");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ClientId");
 
                     b.HasIndex("StatusId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Projects");
                 });
@@ -106,6 +100,18 @@ namespace Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Statuses");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            StatusName = "Started"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            StatusName = "Completed"
+                        });
                 });
 
             modelBuilder.Entity("Data.Entities.UserEntity", b =>
@@ -128,12 +134,11 @@ namespace Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("FirstName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("JobTitle")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
@@ -329,17 +334,9 @@ namespace Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Data.Entities.UserEntity", "User")
-                        .WithMany("Projects")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Client");
 
                     b.Navigation("Status");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -399,11 +396,6 @@ namespace Data.Migrations
                 });
 
             modelBuilder.Entity("Data.Entities.StatusEntity", b =>
-                {
-                    b.Navigation("Projects");
-                });
-
-            modelBuilder.Entity("Data.Entities.UserEntity", b =>
                 {
                     b.Navigation("Projects");
                 });

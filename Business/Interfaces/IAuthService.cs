@@ -7,5 +7,6 @@ namespace Business.Interfaces
     {
         Task<AuthResult> SignInAsync(SignInFormData formData);
         Task<AuthResult> SignUpAsync(SignUpFormData formData);
+        Task SignOutAsync();
     }
 }

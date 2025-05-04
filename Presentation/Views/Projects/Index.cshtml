@@ -1,0 +1,397 @@
+﻿@using System.Linq
+@using Data.Entities
+@model Presentation.Models.ProjectsViewModel
+
+@{
+    ViewData["Title"] = "Projects";
+
+    var allClients = (ViewBag.Clients as IEnumerable<Domain.Models.Client>)
+                     ?? Enumerable.Empty<Domain.Models.Client>();
+    var allProjects = (Model?.Projects ?? Enumerable.Empty<Domain.Models.Project>())
+                      .ToList();
+    var startedProjects = allProjects
+        .Where(p => p.Status != null && p.Status.StatusName == "Started")
+        .ToList();
+    var completedProjects = allProjects
+        .Where(p => p.Status != null && p.Status.StatusName == "Completed")
+        .ToList();
+}
+
+<div id="projects" class="page">
+    <div class="page-header">
+        <h1>Projects</h1>
+        <button type="button" class="btn" data-type="modal" data-target="#add-project-modal">
+            <i class="fa-duotone fa-solid fa-plus"></i>
+            <span>Add Project</span>
+        </button>
+    </div>
+
+    <div class="project-filters">
+        <button class="filter-button active" data-filter="all">
+            ALL [@allProjects.Count]
+        </button>
+        <button class="filter-button" data-filter="started">
+            STARTED [@startedProjects.Count]
+        </button>
+        <button class="filter-button" data-filter="completed">
+            COMPLETED [@completedProjects.Count]
+        </button>
+        <div class="divider"></div>
+    </div>
+
+    <section class="project-list">
+        @if (allProjects.Any())
+        {
+            foreach (var project in allProjects)
+            {
+                <div class="project card"
+                     data-project-id="@project.Id"
+                     data-status="@(project.Status?.StatusName?.ToLower() ?? "unknown")">
+                    <div class="card-header">
+                        <div class="project-image">
+                            <img src="~/images/projects/project-template.svg"
+                                 alt="project image" />
+                        </div>
+                        <h6 class="project-name">@project.ProjectName</h6>
+                        <span class="client-name">
+                            @project.Client?.ClientName
+                        </span>
+
+                        <div class="project-actions">
+                            <button type="button"
+                                    class="btn-action"
+                                    data-type="dropdown"
+                                    data-target="#project-dropdown-@project.Id">
+                                <i class="fa-solid fa-ellipsis"></i>
+                            </button>
+                            <div id="project-dropdown-@project.Id" class="dropdown">
+                                <div class="dropdown-body">
+                                    <nav class="dropdown-actions">
+                                        <button data-type="modal"
+                                                data-target="#edit-project-modal"
+                                                class="dropdown-action"
+                                                data-id="@project.Id"
+                                                data-project-name="@project.ProjectName"
+                                                data-description="@project.Description"
+                                                data-start-date="@project.StartDate.ToString("yyyy-MM-dd")"
+                                                data-end-date="@project.EndDate?.ToString("yyyy-MM-dd")"
+                                                data-budget="@project.Budget"
+                                                data-client-id="@project.Client?.Id"
+                                                data-status-id="@project.Status?.Id">
+                                            <i class="fa-duotone fa-solid fa-pen-to-square"></i>
+                                            <span>Edit</span>
+                                        </button>
+                                    </nav>
+                                    <div class="divider"></div>
+                                    <nav class="dropdown-actions">
+                                        <form asp-controller="Projects" asp-action="Delete" method="post" style="display:inline;">
+                                            <input type="hidden" name="id" value="@project.Id" />
+                                            <button type="submit" class="dropdown-action remove">
+                                                <i class="fa-duotone fa-solid fa-trash"></i>
+                                                <span>Delete Project</span>
+                                            </button>
+                                        </form>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @Html.Raw(project.Description)
+                    </div>
+                    @{
+                        // Compute status generated by ChatGPT
+                        var now = DateTime.Now.Date;
+                        string badgeClass;
+                        string iconClass;
+                        string timeText;
+
+                        if (project.Status?.StatusName == "Completed")
+                        {
+                            badgeClass = "normal";
+                            iconClass = "fa-check";
+                            timeText = "Completed";
+                        }
+                        else if (!project.EndDate.HasValue)
+                        {
+                            badgeClass = "normal";
+                            iconClass = "fa-clock";
+                            timeText = "No deadline set";
+                        }
+                        else
+                        {
+                            var diff = (project.EndDate.Value.Date - now).Days;
+                            iconClass = "fa-clock";
+
+                            if (diff < 0)
+                            {
+                                badgeClass = "danger";                // red background
+                                timeText = $"{Math.Abs(diff)} day{(Math.Abs(diff) > 1 ? "s" : "")} overdue";
+                            }
+                            else if (diff <= 7)
+                            {
+                                badgeClass = "warning";               // yellow background
+                                timeText = $"{diff} day{(diff != 1 ? "s" : "")} left";
+                            }
+                            else
+                            {
+                                badgeClass = "normal";                // default grey
+                                var weeks = diff / 7;
+                                timeText = $"{weeks} week{(weeks != 1 ? "s" : "")} left";
+                            }
+                        }
+                    }
+
+                    <div class="card-footer">
+                        <div class="badge badge-@badgeClass">
+                            <i class="fa-duotone fa-solid @iconClass"></i>
+                            <span>@timeText</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p>No projects found.</p>
+        }
+    </section>
+
+    <!-- Add Project Modal -->
+    <section id="add-project-modal" class="modal">
+        <div class="card">
+            <div class="card-header">
+                <h3>Add project</h3>
+                <button data-type="close" data-target="#add-project-modal" class="btn-close"></button>
+            </div>
+            <div class="card-body">
+                <form asp-controller="Projects"
+                      asp-action="Add"
+                      method="post"
+                      enctype="multipart/form-data"
+                      novalidate>
+
+                    <!-- Image upload -->
+                    <div class="form-group">
+                        <div class="image-preview-container project-image"
+                             data-file-upload>
+                            <img class="hide" />
+                            <div class="circle circle-grey">
+                                <i class="fa-duotone fa-solid fa-camera"></i>
+                            </div>
+                            <input type="file"
+                                   name="ImageFile"
+                                   accept="image/*"
+                                   hidden />
+                        </div>
+                    </div>
+
+                    <!-- Project Name -->
+                    <div class="form-group">
+                        <label class="form-label">Project Name</label>
+                        <input class="form-input"
+                               type="text"
+                               name="ProjectName"
+                               required />
+                        <span class="field-error"
+                              data-valmsg-for="ProjectName"
+                              data-valmsg-replace="true"></span>
+                    </div>
+
+                    <!-- Client dropdown -->
+                    <div class="form-group">
+                        <label class="form-label">Client</label>
+                        <div class="form-select" data-placeholder="Choose a client">
+                            <button type="button" class="form-select-trigger">
+                                <span class="form-select-text">Choose a client</span>
+                            </button>
+                            <ul class="form-select-options">
+                                @foreach (var c in allClients)
+                                {
+                                    <li class="form-select-option" data-value="@c.Id">
+                                        @c.ClientName
+                                    </li>
+                                }
+                            </ul>
+                            <input type="hidden" name="ClientId" required />
+                            <span class="field-error"
+                                  data-valmsg-for="ClientId"
+                                  data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+
+                    <!-- Description via Quill -->
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <div class="wysiwyg">
+                            <textarea id="add-project-textarea"
+                                      name="Description"
+                                      hidden></textarea>
+                            <div id="add-project-editor"
+                                 data-quill-editor
+                                 data-quill-toolbar="#add-project-toolbar"
+                                 class="wysiwyg-editor"></div>
+                        </div>
+                        <span class="field-error"
+                              data-valmsg-for="Description"
+                              data-valmsg-replace="true"></span>
+                    </div>
+
+                    <!-- Dates -->
+                    <div class="form-horizontal-group">
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input class="form-input"
+                                   type="date"
+                                   name="StartDate"
+                                   required />
+                            <span class="field-error"
+                                  data-valmsg-for="StartDate"
+                                  data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Date</label>
+                            <input class="form-input"
+                                   type="date"
+                                   name="EndDate" />
+                            <span class="field-error"
+                                  data-valmsg-for="EndDate"
+                                  data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+
+                    <!-- Budget -->
+                    <div class="form-group">
+                        <label class="form-label">Budget</label>
+                        <div class="form-input-extended">
+                            <i class="fa-duotone fa-solid fa-dollar-sign"></i>
+                            <input class="form-input"
+                                   type="number"
+                                   step="0.01"
+                                   name="Budget"
+                                   min="0"
+                                   placeholder="0" />
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <div class="form-select" data-placeholder="Select status…">
+                            <button type="button" class="form-select-trigger">
+                                <span class="form-select-text">Select status…</span>
+                            </button>
+                            <ul class="form-select-options">
+                                <li class="form-select-option" data-value="1">Started</li>
+                                <li class="form-select-option" data-value="2">Completed</li>
+                            </ul>
+                            <input type="hidden" name="StatusId" required />
+                            <span class="field-error" data-valmsg-for="StatusId" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Create</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Edit Project Modal -->
+    <section id="edit-project-modal" class="modal">
+        <div class="card">
+            <div class="card-header">
+                <h3>Edit Project</h3>
+                <button data-type="close" data-target="#edit-project-modal" class="btn-close"></button>
+            </div>
+            <div class="card-body">
+                <form asp-controller="Projects"
+                      asp-action="Edit"
+                      method="post"
+                      enctype="multipart/form-data"
+                      novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" />
+
+                    <div class="form-group">
+                        <div class="image-preview-container project-image" data-file-upload>
+                            <img id="edit-image-preview" class="hide" />
+                            <div class="circle circle-grey">
+                                <i class="fa-duotone fa-solid fa-camera"></i>
+                            </div>
+                            <input type="file" name="ImageFile" accept="image/*" hidden />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Project Name</label>
+                        <input class="form-input" type="text" name="ProjectName" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Client</label>
+                        <div class="form-select" data-placeholder="Choose a client">
+                            <button type="button" class="form-select-trigger">
+                                <span class="form-select-text">Choose a client</span>
+                            </button>
+                            <ul class="form-select-options">
+                                @foreach (var c in allClients)
+                                {
+                                    <li class="form-select-option" data-value="@c.Id">
+                                        @c.ClientName
+                                    </li>
+                                }
+                            </ul>
+                            <input type="hidden" name="ClientId" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <div class="wysiwyg">
+                            <textarea id="edit-project-textarea" name="Description" hidden></textarea>
+                            <div id="edit-project-editor" class="wysiwyg-editor"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-horizontal-group">
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input class="form-input" type="date" name="StartDate" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Date</label>
+                            <input class="form-input" type="date" name="EndDate" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Budget</label>
+                        <input class="form-input"
+                               type="number"
+                               step="0.01"
+                               name="Budget"
+                               min="0"
+                               placeholder="0" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <div class="form-select" data-placeholder="Select status…">
+                            <button type="button" class="form-select-trigger">
+                                <span class="form-select-text">Select status…</span>
+                            </button>
+                            <ul class="form-select-options">
+                                <li class="form-select-option" data-value="1">Started</li>
+                                <li class="form-select-option" data-value="2">Completed</li>
+                            </ul>
+                            <input type="hidden" name="StatusId"/>
+                            <span class="field-error" data-valmsg-for="StatusId" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>
